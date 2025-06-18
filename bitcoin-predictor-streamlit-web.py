@@ -31,7 +31,7 @@ st.subheader("📊 Predict BTC Price After 10 Minutes")
 
 if st.button("Run Prediction & Show Chart"):
     try:
-        url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60"
+        url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=50"
         data = requests.get(url).json()
 
         df = pd.DataFrame(data, columns=[
