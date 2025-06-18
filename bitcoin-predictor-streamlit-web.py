@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 
 # --- Page Config ---
@@ -43,7 +44,7 @@ minutes_to_predict = prediction_options[selected_option]
 
 if st.button(f"Predict Price After {selected_option}"):
     try:
-        # Fetch last 60 minutes data from Binance
+        # Fetch 60-minute candle data from Binance
         url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60"
         response = requests.get(url)
         response.raise_for_status()
@@ -58,19 +59,34 @@ if st.button(f"Predict Price After {selected_option}"):
             "timestamp", "open", "high", "low", "close", "volume",
             "_", "_", "_", "_", "_", "_"
         ])
+        df["timestamp"] = pd.to_datetime(df["timestamp"], unit='ms')
+        df["open"] = df["open"].astype(float)
+        df["high"] = df["high"].astype(float)
+        df["low"] = df["low"].astype(float)
         df["close"] = df["close"].astype(float)
         df["minute"] = range(len(df))
 
-        # Train model
+        # --- Model Prediction ---
         model = LinearRegression()
         model.fit(df[["minute"]], df["close"])
-
-        # Predict future price
         future_minute = df["minute"].max() + minutes_to_predict
         predicted_price = model.predict([[future_minute]])[0]
 
         st.success(f"📈 Predicted BTC Price (in {selected_option}): ${predicted_price:,.2f}")
-        st.line_chart(df["close"], use_container_width=True)
+
+        # --- Candlestick Chart ---
+        st.subheader("📉 Real-Time Candlestick Chart (Last 60 mins)")
+        fig = go.Figure(data=[go.Candlestick(
+            x=df["timestamp"],
+            open=df["open"],
+            high=df["high"],
+            low=df["low"],
+            close=df["close"],
+            increasing_line_color='green',
+            decreasing_line_color='red'
+        )])
+        fig.update_layout(xaxis_rangeslider_visible=False)
+        st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"Prediction failed: {e}")
