@@ -46,15 +46,12 @@ st.subheader("📊 Predict BTC Price After 10 Minutes")
 if st.button("Run Prediction & Show Chart"):
     df = get_btc_data()
     if df.empty or len(df) < 10:
-        st.error("❌ Not enough data to run prediction. Try again later.")
-    else:
-        df["minute"] = np.arange(len(df))
-        X = df[["minute"]]
-        y = df["close"]
-        model = LinearRegression().fit(X, y)
-        next_minute = [[len(df) + 10]]
-        predicted_price = model.predict(next_minute)[0]
-        st.success(f"🔮 Predicted BTC Price in 10 Minutes: ${predicted_price:.2f}")
+    st.error("❌ Not enough data to run prediction. Try again later.")
+else:
+    model = LinearRegression().fit(df[["minute"]], df["price"])
+    prediction = model.predict([[len(df) + 10]])[0]
+    st.success(f"🔮 Predicted BTC Price in 10 Minutes: ${prediction:.2f}")
+
 
         # Chart
         fig, ax = plt.subplots()
