@@ -12,7 +12,7 @@ st.set_page_config(
 
 # --- UI Header ---
 st.title("📈 Bitcoin Prediction Maker")
-st.caption("🔌 Powered by CoinGecko & Binance APIs — No API key required")
+st.caption("🔌 Powered by CoinGecko — No API key required")
 
 # --- Live BTC Price ---
 st.subheader("💰 Get Current BTC Price (USD)")
@@ -31,23 +31,21 @@ st.subheader("📊 Predict BTC Price After 10 Minutes")
 
 if st.button("Run Prediction & Show Chart"):
     try:
-        url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60"
-        data = requests.get(url).json()
-        st.write("Raw Binance Data:", data)
+        url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=minutely"
+        data = requests.get(url).json()["prices"]
 
-        df = pd.DataFrame(data, columns=[
-            "timestamp", "open", "high", "low", "close", "volume",
-            "_", "_", "_", "_", "_", "_"
-        ])
-        df["close"] = df["close"].astype(float)
-        df["minute"] = range(len(df))
+        if not data or len(data) < 30:
+            st.error("❌ Not enough data to run prediction. Try again later.")
+        else:
+            df = pd.DataFrame(data, columns=["timestamp", "price"])
+            df["minute"] = range(len(df))
 
-        model = LinearRegression()
-        model.fit(df[["minute"]], df["close"])
-        predicted_price = model.predict([[df["minute"].max() + 10]])[0]
+            model = LinearRegression()
+            model.fit(df[["minute"]], df["price"])
+            predicted_price = model.predict([[df["minute"].max() + 10]])[0]
 
-        st.success(f"📈 Predicted BTC Price (in 10 mins): ${predicted_price:,.2f}")
-        st.line_chart(df["close"], use_container_width=True)
+            st.success(f"📈 Predicted BTC Price (in 10 mins): ${predicted_price:,.2f}")
+            st.line_chart(df["price"], use_container_width=True)
 
     except Exception as e:
         st.error(f"Prediction failed: {e}")
