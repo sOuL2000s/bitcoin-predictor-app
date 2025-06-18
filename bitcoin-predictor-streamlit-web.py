@@ -12,15 +12,16 @@ st.set_page_config(
 
 # --- UI Header ---
 st.title("📈 Bitcoin Prediction Maker")
-st.caption("🔌 Powered by CoinGecko & Binance APIs — No API key required")
+st.caption("🔌 Powered by Binance API — No API key required")
 
 # --- Live BTC Price ---
 st.subheader("💰 Get Current BTC Price (USD)")
 
 if st.button("Fetch Live Price"):
     try:
-        res = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
-        price = res.json()["bitcoin"]["usd"]
+        res = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT")
+        res.raise_for_status()
+        price = float(res.json()["price"])
         st.success(f"₿ 1 BTC = ${price:,.2f}")
     except Exception as e:
         st.error(f"Error fetching price: {e}")
@@ -44,7 +45,9 @@ if st.button(f"Predict Price After {selected_option}"):
     try:
         # Fetch last 60 minutes data from Binance
         url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60"
-        data = requests.get(url).json()
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
 
         # Check for valid response
         if not isinstance(data, list) or len(data) == 0:
