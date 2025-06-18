@@ -25,28 +25,19 @@ if st.button("Fetch Live Price"):
 # --- Historical Data Fetch ---
 @st.cache_data(ttl=600)
 def get_btc_data(minutes=20):
-    end = datetime.utcnow()
-    start = end - timedelta(minutes=minutes)
-    url = "https://api.binance.com/api/v3/klines"
-    params = {
-        "symbol": "BTCUSDT",
-        "interval": "1m",
-        "startTime": int(start.timestamp() * 1000),
-        "endTime": int(end.timestamp() * 1000)
-    }
+    def get_btc_data(minutes=20):
     try:
-        response = requests.get(url, params=params)
-        raw = response.json()
-        if not raw or isinstance(raw, dict) and "code" in raw:
-            return pd.DataFrame()
-        df = pd.DataFrame(raw, columns=[
-            "open_time", "open", "high", "low", "close", "volume",
-            "close_time", "quote_asset_volume", "num_trades",
-            "taker_buy_base", "taker_buy_quote", "ignore"
-        ])
-        df["close"] = df["close"].astype(float)
-        df["time"] = pd.to_datetime(df["close_time"], unit='ms')
-        return df[["time", "close"]]
+        url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
+        params = {"vs_currency": "usd", "days": "1", "interval": "minute"}
+        res = requests.get(url, params=params)
+        prices = res.json()["prices"]  # List of [timestamp, price]
+
+        df = pd.DataFrame(prices, columns=["time", "price"])
+        df["time"] = pd.to_datetime(df["time"], unit="ms")
+        df = df.tail(minutes)
+        df.reset_index(drop=True, inplace=True)
+        df["minute"] = df.index
+        return df
     except:
         return pd.DataFrame()
 
