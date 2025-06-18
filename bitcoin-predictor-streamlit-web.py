@@ -26,20 +26,20 @@ if st.button("Fetch Live Price"):
 @st.cache_data(ttl=600)
 def get_btc_data(minutes=20):
     def get_btc_data(minutes=20):
-    try:
-        url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
-        params = {"vs_currency": "usd", "days": "1", "interval": "minute"}
-        res = requests.get(url, params=params)
-        prices = res.json()["prices"]  # List of [timestamp, price]
-
-        df = pd.DataFrame(prices, columns=["time", "price"])
-        df["time"] = pd.to_datetime(df["time"], unit="ms")
-        df = df.tail(minutes)
-        df.reset_index(drop=True, inplace=True)
-        df["minute"] = df.index
-        return df
-    except:
-        return pd.DataFrame()
+        try:
+            url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
+            params = {"vs_currency": "usd", "days": "1", "interval": "minute"}
+            res = requests.get(url, params=params)
+            prices = res.json()["prices"]  # List of [timestamp, price]
+    
+            df = pd.DataFrame(prices, columns=["time", "price"])
+            df["time"] = pd.to_datetime(df["time"], unit="ms")
+            df = df.tail(minutes)
+            df.reset_index(drop=True, inplace=True)
+            df["minute"] = df.index
+            return df
+        except:
+            return pd.DataFrame()
 
 # --- Prediction ---
 st.subheader("📊 Predict BTC Price After 10 Minutes")
