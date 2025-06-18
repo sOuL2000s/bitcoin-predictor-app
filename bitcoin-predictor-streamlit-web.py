@@ -33,6 +33,7 @@ if st.button("Run Prediction & Show Chart"):
     try:
         url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60"
         data = requests.get(url).json()
+        st.write("Raw Binance Data:", data)
 
         df = pd.DataFrame(data, columns=[
             "timestamp", "open", "high", "low", "close", "volume",
