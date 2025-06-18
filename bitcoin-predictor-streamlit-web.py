@@ -27,13 +27,30 @@ if st.button("Fetch Live Price"):
 
 # --- Prediction Section ---
 st.divider()
-st.subheader("📊 Predict BTC Price After 10 Minutes")
+st.subheader("📊 Predict BTC Price")
 
-if st.button("Run Prediction & Show Chart"):
+# Prediction time options
+prediction_options = {
+    "10 Minutes": 10,
+    "15 Minutes": 15,
+    "30 Minutes": 30,
+    "1 Hour": 60
+}
+
+selected_option = st.selectbox("⏳ Select Prediction Time", list(prediction_options.keys()))
+minutes_to_predict = prediction_options[selected_option]
+
+if st.button(f"Predict Price After {selected_option}"):
     try:
+        # Fetch last 60 minutes data from Binance
         url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60"
         data = requests.get(url).json()
 
+        # Check for valid response
+        if not isinstance(data, list) or len(data) == 0:
+            raise ValueError("Binance API returned no data or is blocked.")
+
+        # Prepare DataFrame
         df = pd.DataFrame(data, columns=[
             "timestamp", "open", "high", "low", "close", "volume",
             "_", "_", "_", "_", "_", "_"
@@ -41,11 +58,15 @@ if st.button("Run Prediction & Show Chart"):
         df["close"] = df["close"].astype(float)
         df["minute"] = range(len(df))
 
+        # Train model
         model = LinearRegression()
         model.fit(df[["minute"]], df["close"])
-        predicted_price = model.predict([[df["minute"].max() + 10]])[0]
 
-        st.success(f"📈 Predicted BTC Price (in 10 mins): ${predicted_price:,.2f}")
+        # Predict future price
+        future_minute = df["minute"].max() + minutes_to_predict
+        predicted_price = model.predict([[future_minute]])[0]
+
+        st.success(f"📈 Predicted BTC Price (in {selected_option}): ${predicted_price:,.2f}")
         st.line_chart(df["close"], use_container_width=True)
 
     except Exception as e:
