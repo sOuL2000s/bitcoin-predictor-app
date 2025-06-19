@@ -98,7 +98,7 @@ else:
 if minutes_to_predict:
     try:
         # Use 240 minutes of data (4 hours) for better training
-        candle_limit = 240
+        candle_limit = 1440
         url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&limit={candle_limit}"
         data = requests.get(url).json()
         df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "_", "_", "_", "_", "_", "_"])
@@ -122,7 +122,7 @@ if minutes_to_predict:
         st.success(f"⚡ XGBoost Prediction: ${xgb_pred:,.2f}")
 
         # --- Candlestick Chart ---
-        st.subheader(f"📊 {selected_crypto} - Last {candle_limit} Minutes")
+        st.subheader(f"📊 {selected_crypto} - Last 24 Hours")
         fig = go.Figure(data=[go.Candlestick(
             x=df["timestamp"],
             open=df["open"].astype(float),
