@@ -1,6 +1,8 @@
 streamlit
-pandas
 requests
-scikit-learn
+pandas
 plotly
+scikit-learn
 xgboost
+ta
+numpy
