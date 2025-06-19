@@ -1,13 +1,18 @@
+
 import streamlit as st
 import requests
 import pandas as pd
 import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error
 from xgboost import XGBRegressor
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import base64
 import numpy as np
+import ta
 
 # --- Set Timezone ---
 LOCAL_TZ = ZoneInfo("Asia/Kolkata")
@@ -28,8 +33,8 @@ if dark_mode:
     """, unsafe_allow_html=True)
 
 # --- Header ---
-st.title("📈 Crypto Prediction Maker")
-st.caption("🔌 Powered by Binance API + AI")
+st.title("📈 Crypto Prediction Maker (Enhanced)")
+st.caption("🔌 Powered by Binance API + AI + Technical Indicators")
 st.markdown(f"🕒 **Current IST Time:** {now_local.strftime('%H:%M:%S')}")
 
 # --- Crypto Selection ---
@@ -97,55 +102,77 @@ else:
 # --- Prediction Logic ---
 if minutes_to_predict:
     try:
-        # Use 240 minutes of data (4 hours) for better training
         candle_limit = 1440
         url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&limit={candle_limit}"
         data = requests.get(url).json()
         df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "_", "_", "_", "_", "_", "_"])
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
         df["close"] = df["close"].astype(float)
+        df["open"] = df["open"].astype(float)
+        df["high"] = df["high"].astype(float)
+        df["low"] = df["low"].astype(float)
+        df["volume"] = df["volume"].astype(float)
         df["minute"] = range(len(df))
 
-        # --- Linear Regression ---
-        model_lr = LinearRegression().fit(df[["minute"]], df["close"])
-        lin_pred = model_lr.predict([[df["minute"].max() + minutes_to_predict]])[0]
+        # --- Technical Indicators ---
+        df["ma_10"] = df["close"].rolling(window=10).mean()
+        df["rsi"] = ta.momentum.RSIIndicator(close=df["close"]).rsi()
+        df["macd"] = ta.trend.MACD(close=df["close"]).macd()
+        df.dropna(inplace=True)
 
-        # --- XGBoost Regressor ---
-        X = df["minute"].values.reshape(-1, 1)
-        y = df["close"].values
-        model_xgb = XGBRegressor(n_estimators=100, max_depth=4)
-        model_xgb.fit(X, y)
-        xgb_pred = model_xgb.predict([[df["minute"].max() + minutes_to_predict]])[0]
+        features = ["minute", "open", "high", "low", "volume", "ma_10", "rsi", "macd"]
+        X = df[features]
+        y = df["close"]
 
-        # --- Output ---
-        st.success(f"🔹 Linear Regression: ${lin_pred:,.2f}")
-        st.success(f"⚡ XGBoost Prediction: ${xgb_pred:,.2f}")
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
 
-        # --- Candlestick Chart ---
+        X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+        model = XGBRegressor(n_estimators=150, max_depth=5, learning_rate=0.1)
+        model.fit(X_train, y_train)
+
+        mae = mean_absolute_error(y_test, model.predict(X_test))
+        st.write(f"📉 Model MAE (test): {mae:.4f}")
+
+        future_minute = df["minute"].max() + minutes_to_predict
+        latest = df.iloc[-1:]
+        future_features = pd.DataFrame({
+            "minute": [future_minute],
+            "open": latest["open"].values,
+            "high": latest["high"].values,
+            "low": latest["low"].values,
+            "volume": latest["volume"].values,
+            "ma_10": latest["ma_10"].values,
+            "rsi": latest["rsi"].values,
+            "macd": latest["macd"].values
+        })
+        future_scaled = scaler.transform(future_features)
+        prediction = model.predict(future_scaled)[0]
+        st.success(f"🚀 Predicted Price at {user_time.strftime('%H:%M')} IST: ${prediction:,.2f}")
+
+        # --- Chart ---
         st.subheader(f"📊 {selected_crypto} - Last 24 Hours")
         fig = go.Figure(data=[go.Candlestick(
             x=df["timestamp"],
-            open=df["open"].astype(float),
-            high=df["high"].astype(float),
-            low=df["low"].astype(float),
-            close=df["close"].astype(float),
+            open=df["open"],
+            high=df["high"],
+            low=df["low"],
+            close=df["close"],
             increasing_line_color='lime',
             decreasing_line_color='red'
         )])
         fig.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False)
         st.plotly_chart(fig, use_container_width=True)
 
-        # --- Export CSV ---
-        st.subheader("📄 Export Prediction")
+        # --- Export ---
         export_df = pd.DataFrame({
             "Crypto": [symbol],
-            "Mode": ["XGBoost & Linear"],
+            "Mode": ["XGBoost + Technical"],
             "Minutes Ahead": [minutes_to_predict],
-            "Predicted Price (LR)": [round(lin_pred, 2)],
-            "Predicted Price (XGBoost)": [round(xgb_pred, 2)],
+            "Predicted Price": [round(prediction, 2)],
             "Time (IST)": [user_time.strftime("%H:%M")]
         })
-
         csv = export_df.to_csv(index=False)
         b64 = base64.b64encode(csv.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="prediction.csv">📥 Download Prediction CSV</a>'
@@ -156,4 +183,4 @@ if minutes_to_predict:
 
 # --- Footer ---
 st.divider()
-st.caption("Made with ❤️ in Python + Streamlit • Mobile Ready • Multi-Crypto • XGBoost + ML Powered")
+st.caption("Made with ❤️ using Python, Streamlit, Binance API, and AI-powered Technical Indicators.")
