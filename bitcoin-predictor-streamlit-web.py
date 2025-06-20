@@ -1,4 +1,4 @@
-# Crypto Prediction Maker Pro++ (Final Version with Enhanced UI/UX)
+# Crypto Prediction Maker Pro++ (Mobile-Optimized)
 import streamlit as st
 import requests
 import pandas as pd
@@ -17,15 +17,16 @@ import ta
 # --- Setup ---
 LOCAL_TZ = ZoneInfo("Asia/Kolkata")
 now_local = datetime.now(LOCAL_TZ)
-st.set_page_config(page_title="Crypto Dashboard", layout="wide", page_icon="₿")
+st.set_page_config(page_title="Crypto Dashboard", layout="centered", page_icon="₿")
 
-# --- Apply Custom Theme & CSS ---
+# --- Apply Custom Theme & Responsive CSS ---
 st.markdown("""
     <style>
     .stApp {
         background-color: #0f0f0f;
         color: #E5E7EB;
         font-family: 'Segoe UI', sans-serif;
+        padding: 10px;
     }
     .stButton>button {
         background-color: #00FFAB;
@@ -44,20 +45,29 @@ st.markdown("""
         font-weight: bold;
         color: #00FFAB;
     }
-    .stTabs [data-baseweb="tab"] {
-        font-size: 18px;
+    @media only screen and (max-width: 768px) {
+        .big-font {
+            font-size: 20px !important;
+        }
+        .stButton>button {
+            padding: 6px 12px !important;
+            font-size: 14px !important;
+        }
+        .stSidebar {
+            width: 100% !important;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
 
 # --- Sidebar ---
-st.sidebar.title("⚙️ Settings")
-dark_mode = st.sidebar.toggle("🌌 Dark Mode", value=True)
-model_choice = st.sidebar.selectbox("📊 Model", ["XGBoost", "Linear Regression"])
-live_refresh = st.sidebar.toggle("🔄 Auto Refresh Live Price", value=False)
-show_sentiment = st.sidebar.toggle("💬 Sentiment Analysis (Mock)", value=True)
-confidence_enabled = st.sidebar.toggle("📉 Show Confidence Interval", value=True)
-show_multiple_forecast = st.sidebar.toggle("⏱️ Multi-Timeframe Forecast", value=True)
+with st.sidebar.expander("⚙️ Settings", expanded=True):
+    dark_mode = st.toggle("🌌 Dark Mode", value=True)
+    model_choice = st.selectbox("📊 Model", ["XGBoost", "Linear Regression"])
+    live_refresh = st.toggle("🔄 Auto Refresh Live Price", value=False)
+    show_sentiment = st.toggle("💬 Sentiment Analysis (Mock)", value=True)
+    confidence_enabled = st.toggle("📉 Show Confidence Interval", value=True)
+    show_multiple_forecast = st.toggle("⏱️ Multi-Timeframe Forecast", value=True)
 
 # --- Crypto Selection ---
 symbols = {
@@ -71,7 +81,7 @@ selected_crypto = st.sidebar.selectbox("🔑 Select Cryptocurrency", list(symbol
 symbol = symbols[selected_crypto]
 
 # --- Tabs Layout ---
-tabs = st.tabs(["Live 📰", "Predict 📊", "Accuracy 🧹", "Chart 📈", "Forecast ⏱️", "Export 📅"])
+tabs = st.tabs(["Live 📰", "Predict 📊", "Accuracy 🧹", "Chart 📈", "Forecast ⏱️", "Export 🗓️"])
 
 # --- Fetch Market Data ---
 url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&limit=1440"
