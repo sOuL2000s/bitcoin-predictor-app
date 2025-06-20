@@ -1,4 +1,4 @@
-# Crypto Prediction Maker Pro++ (Unified Full Feature Dashboard)
+# Crypto Prediction Maker Pro++ (Final Version with Enhanced UI/UX)
 import streamlit as st
 import requests
 import pandas as pd
@@ -19,7 +19,38 @@ LOCAL_TZ = ZoneInfo("Asia/Kolkata")
 now_local = datetime.now(LOCAL_TZ)
 st.set_page_config(page_title="Crypto Dashboard", layout="wide", page_icon="₿")
 
-# --- Sidebar Settings ---
+# --- Apply Custom Theme & CSS ---
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0f0f0f;
+        color: #E5E7EB;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .stButton>button {
+        background-color: #00FFAB;
+        color: black;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: bold;
+    }
+    .stButton>button:hover {
+        background-color: #10B981;
+        color: white;
+    }
+    .big-font {
+        font-size: 26px;
+        font-weight: bold;
+        color: #00FFAB;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-size: 18px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Sidebar ---
 st.sidebar.title("⚙️ Settings")
 dark_mode = st.sidebar.toggle("🌌 Dark Mode", value=True)
 model_choice = st.sidebar.selectbox("📊 Model", ["XGBoost", "Linear Regression"])
@@ -27,15 +58,6 @@ live_refresh = st.sidebar.toggle("🔄 Auto Refresh Live Price", value=False)
 show_sentiment = st.sidebar.toggle("💬 Sentiment Analysis (Mock)", value=True)
 confidence_enabled = st.sidebar.toggle("📉 Show Confidence Interval", value=True)
 show_multiple_forecast = st.sidebar.toggle("⏱️ Multi-Timeframe Forecast", value=True)
-
-# --- Apply Theme ---
-if dark_mode:
-    st.markdown("""
-        <style>
-        body {background-color: #111; color: #eee;}
-        .stApp {background-color: #111; color: #eee;}
-        </style>
-    """, unsafe_allow_html=True)
 
 # --- Crypto Selection ---
 symbols = {
@@ -49,7 +71,7 @@ selected_crypto = st.sidebar.selectbox("🔑 Select Cryptocurrency", list(symbol
 symbol = symbols[selected_crypto]
 
 # --- Tabs Layout ---
-tabs = st.tabs(["Live Price", "Prediction", "Accuracy", "Chart", "Forecast", "Export"])
+tabs = st.tabs(["Live 📰", "Predict 📊", "Accuracy 🧹", "Chart 📈", "Forecast ⏱️", "Export 📅"])
 
 # --- Fetch Market Data ---
 url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&limit=1440"
@@ -132,7 +154,7 @@ with tabs[1]:
         latest_price = df["close"].iloc[-1]
         delta = prediction - latest_price
 
-        st.success(f"🚀 Predicted Price at {user_time.strftime('%H:%M')} IST: ${prediction:,.2f}")
+        st.markdown(f"<p class='big-font'>🚀 Predicted Price: ${prediction:,.2f} at {user_time.strftime('%H:%M')} IST</p>", unsafe_allow_html=True)
         st.info(f"📊 Expected Change: ${delta:.2f} ({'Increase 📈' if delta > 0 else 'Decrease 📉'})")
 
         if confidence_enabled:
@@ -140,7 +162,7 @@ with tabs[1]:
                 preds = [model.predict(scaler.transform(input_features))[0] for _ in range(20)]
                 st.write(f"🔎 Confidence Range: ${min(preds):.2f} - ${max(preds):.2f}")
             except:
-                st.warning("Confidence estimation unavailable for selected model.")
+                st.warning("Confidence estimation unavailable.")
 
         if show_sentiment:
             st.subheader("🗣️ Market Sentiment (Mocked)")
@@ -149,7 +171,7 @@ with tabs[1]:
 
 # --- Tab 3: Accuracy ---
 with tabs[2]:
-    st.header("📈 Accuracy Evaluation")
+    st.header("📁 Model Evaluation")
     mae = mean_absolute_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
     naive_mae = mean_absolute_error(y_test, y_test.shift(1).fillna(method='bfill'))
@@ -162,7 +184,7 @@ with tabs[2]:
 
 # --- Tab 4: Chart ---
 with tabs[3]:
-    st.header(f"🔦 {selected_crypto} - Last 24 Hours")
+    st.header(f"🔦 {selected_crypto} - Last 24h Candlestick")
     fig = go.Figure(data=[go.Candlestick(
         x=df["timestamp"], open=df["open"], high=df["high"],
         low=df["low"], close=df["close"],
@@ -172,7 +194,7 @@ with tabs[3]:
 
 # --- Tab 5: Forecast ---
 with tabs[4]:
-    st.header("🧭 Multi-Timeframe Forecast")
+    st.header("🧙 Multi-Timeframe Forecast")
     if show_multiple_forecast and minutes_to_predict:
         times = [10, 30, 60, 120, 240]
         future_df = df.copy()
@@ -214,7 +236,7 @@ with tabs[4]:
 
 # --- Tab 6: Export ---
 with tabs[5]:
-    st.header("📅 Export Prediction")
+    st.header("📆 Export Prediction")
     if minutes_to_predict:
         export_df = pd.DataFrame({
             "Crypto": [symbol],
@@ -231,4 +253,4 @@ with tabs[5]:
 
 # --- Footer ---
 st.markdown("---")
-st.caption("Made with ❤️ using Python, Streamlit, Binance API & AI + Technical Forecasting")
+st.caption("Made with ❤️ using Python, Streamlit, Binance API & AI")
